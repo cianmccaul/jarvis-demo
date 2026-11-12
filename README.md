@@ -1,12 +1,16 @@
 # Jarvis demo
 
+A clickable, fully simulated copy of Jarvis, my site monitor: break a fictional site and watch it detect, explain and fix the outage.
+
+**[Live demo](https://jarvis-demo.pages.dev)** · **[Portfolio](https://cianmccaul.vercel.app)** · **[The real Jarvis](https://github.com/cianmccaul/site-monitor)**
+
+![Overview with an open incident and the Jarvis loop](docs/screenshots/loop.jpg)
+
+## What it does
+
 A clickable, fully simulated copy of **Jarvis**, the site monitor I built to look after small-business websites. It runs on four fictional sites, so you can break them on purpose and watch Jarvis detect the outage, explain it in plain English, propose a guarded one-file fix, email you, and recover once you approve.
 
 Nothing here is real: the sites use `.example` domains, the "model", pull requests, emails and redeploys are scripted, and the page makes no network requests. There are no keys, no login and no back end.
-
-**[Try the demo →](https://jarvis-demo.pages.dev)** · **[The real Jarvis →](https://github.com/cianmccaul/site-monitor)**
-
-![Overview with an open incident and the Jarvis loop](docs/screenshots/loop.jpg)
 
 ## What Jarvis is
 
@@ -78,7 +82,7 @@ On a phone (360 px):
   <img src="docs/screenshots/phone-ask-jarvis.jpg" width="240" alt="Ask Jarvis on a phone">
 </p>
 
-## How it's built
+## How it works
 
 A static site in `public/`, with no build step, framework or dependencies. It totals about 145 KB of code, plus 60 KB of icons.
 
@@ -106,6 +110,14 @@ cd public && python3 -m http.server 8080
 ```
 
 Then open http://localhost:8080.
+
+## Tests
+
+There are no automated tests. The guard-rail code (route-to-file lookup, find-and-replace fix, changed-line count, 15-line limit) is ported from the real Jarvis, and the four scenarios above exercise each rule in the browser.
+
+## Built with
+
+Plain HTML, CSS and JavaScript with no framework, build step or dependencies; WebGL for the background shader; `localStorage` for state; Cloudflare Pages for hosting.
 
 ## Deploy to Cloudflare Pages
 
