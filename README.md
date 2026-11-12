@@ -1,12 +1,16 @@
 # Jarvis demo
 
+A clickable, fully simulated copy of Jarvis, my site monitor: break a fictional site and watch it detect, explain and fix the outage.
+
+**[Live demo](https://cian-jarvis-demo.vercel.app)** · **[Portfolio](https://cianmccaul.vercel.app)** · **[The real Jarvis](https://github.com/cianmccaul/site-monitor)**
+
+![Overview with an open incident and the Jarvis loop](docs/screenshots/loop.jpg)
+
+## What it does
+
 A clickable, fully simulated copy of **Jarvis**, the site monitor I built to look after small-business websites. It runs on four fictional sites, so you can break them on purpose and watch Jarvis detect the outage, explain it in plain English, propose a guarded one-file fix, email you, and recover once you approve.
 
 Nothing here is real: the sites use `.example` domains, the "model", pull requests, emails and redeploys are scripted, and the page makes no network requests. There are no keys, no login and no back end.
-
-**[Try the demo →](https://jarvis-demo.pages.dev)** · **[The real Jarvis →](https://github.com/cianmccaul/site-monitor)**
-
-![Overview with an open incident and the Jarvis loop](docs/screenshots/loop.jpg)
 
 ## What Jarvis is
 
@@ -16,7 +20,7 @@ The safety rules are enforced in code, not just written into a prompt:
 
 1. It never touches `main`. It only ever opens a pull request.
 2. A fix may change **one file only**.
-3. A fix must be **under 15 changed lines**.
+3. A fix must be **15 changed lines or fewer**.
 4. Its token can only reach **the monitored sites' repos**, so it can't modify itself.
 5. If anything is ambiguous or fails, it **fails closed**: no PR, just a note in the email.
 
@@ -55,7 +59,7 @@ Also try:
 | Sites, repos, incidents, people | All fictional (`.example` domains) | My clients' sites |
 | Login, API keys, database | None | Cookie sign-in, repo secrets, JSON state committed to the repo |
 
-**No network calls.** The page's Content-Security-Policy (`public/_headers`) sets `connect-src 'none'`, so the browser itself would block any request to Groq, Resend, GitHub, Vercel or anywhere else. The only third-party requests are the Google Fonts the real dashboard also loads.
+**No network calls.** The page's Content-Security-Policy (`vercel.json`, and `public/_headers` on Cloudflare Pages) sets `connect-src 'none'`, so the browser itself would block any request to Groq, Resend, GitHub, Vercel or anywhere else. The only third-party requests are the Google Fonts the real dashboard also loads.
 
 ## More screenshots
 
@@ -78,7 +82,7 @@ On a phone (360 px):
   <img src="docs/screenshots/phone-ask-jarvis.jpg" width="240" alt="Ask Jarvis on a phone">
 </p>
 
-## How it's built
+## How it works
 
 A static site in `public/`, with no build step, framework or dependencies. It totals about 145 KB of code, plus 60 KB of icons.
 
@@ -92,6 +96,7 @@ public/
   js/app.js         the pretend back end (checks, the loop, guard rails, PRs, emails) and the screens
   js/chat.js        the production Ask Jarvis panel, answering from scripts instead of /api/chat
   _headers          security headers and the CSP for Cloudflare Pages
+vercel.json         the same headers for Vercel, where the live demo runs
 docs/screenshots/   the images above
 ```
 
@@ -107,7 +112,21 @@ cd public && python3 -m http.server 8080
 
 Then open http://localhost:8080.
 
-## Deploy to Cloudflare Pages
+## Tests
+
+There are no automated tests. The guard-rail code (route-to-file lookup, find-and-replace fix, changed-line count, 15-line limit) is ported from the real Jarvis, and the four scenarios above exercise each rule in the browser.
+
+## Built with
+
+Plain HTML, CSS and JavaScript with no framework, build step or dependencies; WebGL for the background shader; `localStorage` for state; hosted on Vercel (it runs on Cloudflare Pages too).
+
+## Deploy to Vercel
+
+This is how the live demo runs. In Vercel, **Add New** → **Project**, import `cianmccaul/jarvis-demo`, leave **Framework Preset** on Other and the build command empty, and deploy. With no build step, Vercel serves the `public/` folder, and `vercel.json` adds the security headers. Every branch and pull request gets its own preview URL.
+
+To check the headers after deploying, run `curl -sI https://cian-jarvis-demo.vercel.app | grep -i content-security` and you should see `connect-src 'none'`.
+
+## Or deploy to Cloudflare Pages
 
 The free plan is fine, and it can be used for client work. There's no build step: Cloudflare just serves the `public/` folder.
 
@@ -120,7 +139,7 @@ The free plan is fine, and it can be used for client work. There's no build step
    - **Framework preset:** None
    - **Build command:** leave empty
    - **Build output directory:** `public`
-4. Click **Save and Deploy**. The site goes live at `https://<project-name>.pages.dev`. If `jarvis-demo.pages.dev` was free, that's the link at the top of this README; otherwise update it.
+4. Click **Save and Deploy**. The site goes live at `https://<project-name>.pages.dev`.
 5. Optional: under the project's **Custom domains**, add something like `jarvis.yourdomain.com`. Cloudflare sets up DNS and HTTPS for you if the domain is on Cloudflare; otherwise it shows you the CNAME record to add.
 
 Every other branch gets its own preview URL, which is handy for checking changes before they reach the link you've shared.
@@ -135,7 +154,7 @@ npx wrangler login
 npx wrangler pages deploy public --project-name jarvis-demo
 ```
 
-`_headers` is picked up automatically either way. To check it after deploying, run `curl -sI https://jarvis-demo.pages.dev | grep -i content-security` and you should see `connect-src 'none'`.
+`_headers` is picked up automatically either way. To check it after deploying, run `curl -sI https://<project-name>.pages.dev | grep -i content-security` and you should see `connect-src 'none'`.
 
 ---
 

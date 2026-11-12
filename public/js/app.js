@@ -180,7 +180,7 @@
   const RAILS = [
     'Never touches main',
     'One file only',
-    `Under ${MAX_CHANGED_LINES} changed lines`,
+    `${MAX_CHANGED_LINES} changed lines or fewer`,
     'Token scoped to the monitored sites’ repos',
     'Fails closed',
   ];
