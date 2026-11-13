@@ -16,6 +16,14 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 6px 18px;
 }
+.demo-bar-lead { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 16px; }
+/* Persistent link back to the portfolio, in the demo bar so it is on every view and never floats over content */
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px;
+  color: var(--text-secondary); font-weight: 500; text-decoration: none;
+}
+.back-link:hover { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
+.back-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
 .demo-bar-text { color: var(--text-secondary); }
 .demo-bar-text strong {
   color: var(--text-primary); font-family: 'Sora', sans-serif; font-weight: 600;
@@ -63,6 +71,23 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .loop-head { background: var(--surface-2); }
 .loop-actions .insight-actions { width: 100%; }
 #scenarioList { margin-bottom: 32px; }
+
+/* "Break a site" was pressed: point at the choices until one is picked */
+.pick-label { color: var(--blue); font-size: 13px; font-weight: 600; margin: -6px 0 10px; }
+.pick-label[hidden] { display: none; }
+#scenarioList.pick-pending {
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--blue), 0 0 18px 2px var(--blue-glow);
+  animation: pick-glow 1.6s ease-in-out infinite;
+}
+@keyframes pick-glow {
+  0%, 100% { box-shadow: 0 0 0 2px var(--blue), 0 0 8px 0 var(--blue-glow); }
+  50% { box-shadow: 0 0 0 2px var(--blue), 0 0 30px 6px var(--blue-glow); }
+}
+/* Reduced motion: no pulse, just a static highlight */
+@media (prefers-reduced-motion: reduce) {
+  #scenarioList.pick-pending { animation: none; }
+}
 
 /* ---------- Site cards: uptime and response history ---------- */
 .site-chart { margin-top: 12px; }
@@ -183,6 +208,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
   .demo-bar-inner { padding: 6px 0 0; gap: 0; display: block; }
   .demo-bar-text { padding: 0 12px; font-size: 11px; letter-spacing: -0.1px; }
   .demo-bar-text strong { padding: 0 6px; margin-right: 0; }
+  .demo-bar-lead { padding: 0 12px; }
+  .demo-bar-lead .demo-bar-text { padding: 0; }
   .demo-bar-links {
     flex-wrap: nowrap; gap: 0 16px; padding: 0 16px 2px;
     overflow-x: auto; white-space: nowrap; scrollbar-width: none;

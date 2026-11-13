@@ -249,7 +249,7 @@
   // ---------- the loop, step by step ----------
   function log(run, text, state = 'ok') {
     run.log.forEach((l) => { if (l.state === 'run') l.state = 'ok'; });
-    run.log.push({ t: new Date().toISOString(), text, state });
+    run.log.push({ t: new Date().toISOString(), text, state, stage: run.stage });
   }
   function setDown(site, sc) {
     const st = S.sites[site.id];
@@ -286,6 +286,7 @@
     slow1: (run, sc, site) => slowCheck(run, sc, site, 1),
     slow2: (run, sc, site) => slowCheck(run, sc, site, 2),
     fail(run, sc, site) {
+      run.stage = 'down';
       setDown(site, sc);
       log(run, sc.statusCode ? checkLine(site, sc.statusCode, sc.responseTimeMs) : `Health check: GET ${site.url} → no response after 10 s (timed out)`, 'bad');
       log(run, 'State change: up → down. Investigating…', 'run');
@@ -376,6 +377,7 @@
       S.emails.push(mail);
       log(run, `Emailed you: 🔴 ${site.name} is down`);
       toast(`New email · 🔴 ${site.name} is down`, `#/inbox/${mail.id}`);
+      run.stage = 'fixing';
       if (sc.id === 'slow') {
         run.phase = 'recovering';
         log(run, 'Still checking. Production checks every 15 minutes; this demo checks every few seconds.', 'run');
@@ -388,6 +390,7 @@
     },
     merge(run) {
       const pr = S.prs[run.prKey];
+      run.stage = 'fixing';
       pr.state = 'merged'; pr.mergedAt = new Date().toISOString();
       S.repos[pr.repo][pr.file] = pr.after;
       log(run, `You approved PR #${pr.number} from ${run.approvedFrom || 'the dashboard'}. Merged into main (squash).`);
@@ -421,6 +424,7 @@
 
   function recover(run, sc, site, ms, final) {
     const downSince = setUp(site, ms);
+    run.stage = 'fixed';
     const down = incidentById(run.incidentId);
     const up = { id: nextId(), siteId: site.id, site: site.name, url: site.url, event: 'up', type: 'up', timestamp: new Date().toISOString(), explanation: null, downId: down.id, downSince };
     S.incidents.push(up);
@@ -459,9 +463,22 @@
     if (delay != null && run.phase !== 'done' && run.phase !== 'awaiting') schedule(run, delay);
   }
 
+  // "Break a site" pressed: scroll to the choices and highlight them until one is picked.
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function promptPick() {
+    if (busyRun()) return;
+    $('scenarioList').classList.add('pick-pending');
+    $('pickLabel').hidden = false;
+  }
+  function clearPick() {
+    $('scenarioList').classList.remove('pick-pending');
+    $('pickLabel').hidden = true;
+  }
+
   function startScenario(scId) {
     const sc = scenarioById(scId);
     if (busyRun() || activeRun(sc.siteId)) return;
+    clearPick();
     const run = { id: nextId(), scenarioId: sc.id, siteId: sc.siteId, step: 0, phase: 'running', startedAt: new Date().toISOString(), log: [] };
     S.runs.push(run);
     if (S.runs.length > 12) S.runs.splice(0, S.runs.length - 12);
@@ -666,6 +683,14 @@
   }
 
   const DOT = { ok: 'green', bad: 'red', info: 'muted', held: 'blue', wait: 'blue pulse', run: 'blue pulse' };
+  // Loop dots follow the site: red while it is down, blue while Jarvis waits on you or a fix is going out,
+  // green once it is fixed. Rows from before the site went down keep their own colour.
+  const STAGE_DOT = { down: 'red', fixing: 'blue', fixed: 'green' };
+  const loopDot = (l, isLast, run) => {
+    const dot = STAGE_DOT[l.stage];
+    if (!dot) return DOT[l.state] || 'green';
+    return dot === 'blue' && isLast && run.phase !== 'done' ? 'blue pulse' : dot;
+  };
   function renderLoop() {
     const run = S.runs.slice(-1)[0];
     const el = $('loopFeed');
@@ -675,9 +700,9 @@
     }
     const sc = scenarioById(run.scenarioId), site = siteById(run.siteId);
     const head = `<div class="feed-row loop-head"><div class="feed-text"><span class="site">${esc(site.name)}</span> <span class="desc">— ${esc(sc.title)}</span></div><div class="feed-time">${run.phase === 'done' ? 'Finished' : run.phase === 'awaiting' ? 'Waiting for you' : 'Running'}</div></div>`;
-    const rows = run.log.map((l) => `
+    const rows = run.log.map((l, i) => `
       <div class="feed-row loop-row">
-        <div class="feed-dot ${DOT[l.state] || 'green'}"></div>
+        <div class="feed-dot ${loopDot(l, i === run.log.length - 1, run)}"></div>
         <div class="feed-text"><span class="desc">${esc(l.text)}</span></div>
         <div class="feed-time">${clock(l.t)}</div>
       </div>`).join('');
@@ -1074,6 +1099,7 @@
     S = seed();
     save();
     reportRunning = null;
+    clearPick();
     if (location.hash === '#/overview') onRoute(); else location.hash = '#/overview';
     window.dispatchEvent(new Event('jarvis:state'));
     window.dispatchEvent(new Event('jarvis:reset'));
@@ -1108,7 +1134,11 @@
       e.preventDefault();
       closeModal();
       if (route.view !== 'overview') location.hash = '#/overview';
-      setTimeout(() => $(act === 'goto-break' ? 'breakSection' : 'loopFeed').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      setTimeout(() => {
+        const behavior = reducedMotion() ? 'auto' : 'smooth';
+        if (act === 'goto-break') { promptPick(); $('breakSection').scrollIntoView({ behavior, block: 'start' }); }
+        else $('loopFeed').scrollIntoView({ behavior, block: 'start' });
+      }, 60);
     }
   });
   $('notifBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('notifDropdown').classList.toggle('open'); } });

@@ -59,7 +59,10 @@
 
   <div class="demo-bar" role="region" aria-label="Demo controls">
     <div class="demo-bar-inner">
-      <p class="demo-bar-text"><strong>Demo</strong> · fictional sites · nothing real is monitored or changed</p>
+      <div class="demo-bar-lead">
+        <a class="back-link" href="https://cianmccaul.vercel.app"><span aria-hidden="true">←</span> Back to portfolio</a>
+        <p class="demo-bar-text"><strong>Demo</strong> · fictional sites · nothing real is monitored or changed</p>
+      </div>
       <div class="demo-bar-links">
         <a href="#/inbox" id="demoInboxLink">Inbox</a>
         <a href="#/overview" data-act="goto-break">Break a site</a>
@@ -117,6 +120,7 @@
 
       <div id="breakSection">
         <div class="section-label">Break a site</div>
+        <div class="pick-label" id="pickLabel" role="status" hidden>Pick a site to break ↓</div>
         <div class="feed scenario-list" id="scenarioList"></div>
       </div>
 
